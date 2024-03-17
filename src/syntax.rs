@@ -1,9 +1,3 @@
-#[derive(Debug, Clone)]
-pub struct Identifier {
-    pub name: String,
-    pub ty: Option<SwiftType>,
-}
-
 /// A Swift expression.
 #[derive(Debug, Clone)]
 pub enum Expression {
@@ -12,9 +6,9 @@ pub enum Expression {
     /// Corresponds to `super` in Swift. Example: `super.init()`
     SuperExpression,
     /// Corresponds to identifiers in Swift. Example: `myVariable`
-    Identifier(expression::IdentifierExpression),
+    Identifier(expression::Identifier),
     /// Corresponds to literals in Swift. Example: `5`, `"Hello"`, `true`
-    Literal(expression::LiteralExpression),
+    Literal(expression::Literal),
     /// Corresponds to binary expressions in Swift. Example: `a + b`
     BinaryExpression(Box<expression::BinaryExpression>),
     /// Corresponds to unary expressions in Swift. Example: `-a`, `!flag`
@@ -49,7 +43,9 @@ pub mod expression {
     use super::{Expression, SwiftType};
 
     #[derive(Debug, Clone)]
-    pub struct IdentifierExpression(pub super::Identifier);
+    pub struct Identifier {
+        pub name: String,
+    }
 
     #[derive(Debug, Clone)]
     pub struct InfixIdentifier {
@@ -63,7 +59,7 @@ pub mod expression {
 
     /// Represents a literal in Swift. Examples: `5`, `3.14`, `true`, `"Hello"`, `'a'`
     #[derive(Debug, Clone)]
-    pub enum LiteralExpression {
+    pub enum Literal {
         Integer(i64),
         Float(f64),
         Bool(bool),
@@ -318,7 +314,7 @@ pub mod statement {
     #[derive(Debug, Clone)]
     pub enum Pattern {
         Literal(LiteralPattern),
-        Identifier(super::Identifier),
+        Identifier(super::expression::Identifier),
         Tuple(TuplePattern),
         EnumCase(EnumCasePattern),
         Wildcard,
@@ -336,7 +332,7 @@ pub mod statement {
     #[derive(Debug, Clone)]
     pub struct LiteralPattern {
         // Using the `Literal` variant of `Expression`.
-        pub value: super::expression::LiteralExpression,
+        pub value: super::expression::Literal,
     }
 
     #[derive(Debug, Clone)]
@@ -457,7 +453,7 @@ pub mod declaration {
     /// ```
     #[derive(Debug, Clone)]
     pub struct FunDeclaration {
-        pub name: super::Identifier,
+        pub name: String,
         pub generics: Option<GenericsDeclaration>,
         pub parameters: Vec<FunctionParameter>,
         pub return_type: Option<SwiftType>,
@@ -492,7 +488,7 @@ pub mod declaration {
         /// // External parameter name, if any.
         pub label: Option<String>,
         /// Internal parameter name.
-        pub internal_name: super::Identifier,
+        pub internal_name: String,
         /// The type of the parameter.
         pub ty: SwiftType,
         /// The default value of the parameter, represented as a String.
@@ -523,7 +519,7 @@ pub mod declaration {
     /// ```
     #[derive(Debug, Clone)]
     pub struct StructDeclaration {
-        pub name: super::Identifier,
+        pub name: String,
         pub generics: Option<GenericsDeclaration>,
         /// Protocol names to which the struct conforms.
         pub conformances: Vec<String>,
@@ -554,7 +550,7 @@ pub mod declaration {
     /// ```
     #[derive(Debug, Clone)]
     pub struct EnumDeclaration {
-        pub name: super::Identifier,
+        pub name: String,
         pub generics: Option<GenericsDeclaration>,
         pub cases: Vec<EnumCase>,
         /// // For enums with raw values
@@ -564,7 +560,7 @@ pub mod declaration {
     /// Represents a single case in an enum. Enum cases in Swift can have associated values.
     #[derive(Debug, Clone)]
     pub struct EnumCase {
-        pub name: super::Identifier,
+        pub name: String,
         /// Empty for cases without associated values
         pub associated_values: Vec<EnumAssociatedValue>,
         /// For enums with raw values, otherwise None
@@ -615,12 +611,12 @@ pub mod declaration {
     /// ```
     #[derive(Debug, Clone)]
     pub struct ClassDeclaration {
-        pub name: super::Identifier,
+        pub name: String,
         pub generics: Option<GenericsDeclaration>,
         /// Optional superclass name for inheritance.
-        pub superclass: Option<super::Identifier>,
+        pub superclass: Option<String>,
         /// Protocols the class conforms to.
-        pub conformances: Vec<super::Identifier>,
+        pub conformances: Vec<String>,
         /// Includes variables and constants.
         pub properties: Vec<VariablePropertyDeclaration>,
         /// Includes functions, computed properties, and overrides.
@@ -653,9 +649,9 @@ pub mod declaration {
     /// ```
     #[derive(Debug, Clone)]
     pub struct ProtocolDeclaration {
-        pub name: super::Identifier,
+        pub name: String,
         /// Names of inherited protocols
-        pub inherited_protocols: Vec<super::Identifier>,
+        pub inherited_protocols: Vec<String>,
         pub property_requirements: Vec<PropertyRequirement>,
         pub method_requirements: Vec<MethodRequirement>,
         pub initializer_requirements: Vec<InitializerRequirement>,
@@ -712,7 +708,7 @@ pub mod declaration {
     #[derive(Debug, Clone)]
     pub struct ExtensionDeclaration {
         /// The type being extended
-        pub type_name: super::Identifier,
+        pub type_name: String,
         /// Protocols the extension conforms to
         pub conformances: Vec<String>,
         /// Computed properties added by the extension
@@ -734,7 +730,7 @@ pub mod declaration {
     #[derive(Debug, Clone)]
     pub struct TypeAliasDeclaration {
         /// The new name for the type.
-        pub name: super::Identifier,
+        pub name: String,
         /// The existing type that is being aliased.
         pub target: SwiftType,
     }
@@ -755,7 +751,7 @@ pub mod declaration {
     /// Represents an import declaration in Swift, capable of importing specific symbols or entire modules.
     #[derive(Debug, Clone)]
     pub struct ImportDeclaration {
-        pub module: super::Identifier,
+        pub module: String,
         pub symbol: ImportSymbol,
     }
 
@@ -763,7 +759,7 @@ pub mod declaration {
     /// Represents a constant declaration in Swift. Example: `let a: Int = 5`
     #[derive(Debug, Clone)]
     pub struct LetDeclaration {
-        pub name: super::Identifier,
+        pub name: String,
         pub ty: Option<SwiftType>,
         pub initial_value: Option<Expression>,
     }
@@ -771,7 +767,7 @@ pub mod declaration {
     /// Represents a variable declaration in Swift. Example: `var a: Int = 5`
     #[derive(Debug, Clone)]
     pub struct VarDeclaration {
-        pub name: super::Identifier,
+        pub name: String,
         pub ty: Option<SwiftType>,
         pub initial_value: Option<Expression>,
     }
@@ -780,7 +776,7 @@ pub mod declaration {
     /// Computed properties in extensions can't store a value; they must provide a getter and optionally a setter.
     #[derive(Debug, Clone)]
     pub struct VariablePropertyDeclaration {
-        pub name: super::Identifier,
+        pub name: String,
         pub ty: SwiftType,
         // The getter function for the computed property
         pub getter: FunDeclaration,
